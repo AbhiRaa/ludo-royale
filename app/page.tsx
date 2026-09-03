@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { getPlayerId, getPlayerName, setPlayerName } from "@/lib/player";
+import { getPlayerId, getPlayerName, lastRoom as readLastRoom, setPlayerName } from "@/lib/player";
 import { normaliseCode } from "@/lib/id";
 import { COLORS } from "@/lib/ludo/types";
 import { PALETTE } from "@/lib/ludo/render";
@@ -20,7 +20,7 @@ export default function Lobby() {
 
   useEffect(() => {
     setName(getPlayerName());
-    setLastRoom(localStorage.getItem("ludo.lastRoom"));
+    setLastRoom(readLastRoom());
   }, []);
 
   const remember = () => {

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { useRoom } from "@/lib/useRoom";
-import { getPlayerName, setPlayerName } from "@/lib/player";
+import { getPlayerName, rememberRoom, setPlayerName } from "@/lib/player";
 import { loadMutePreference, setMuted, sfx, unlockAudio } from "@/lib/sound";
 import { COLOR_LABEL, PALETTE } from "@/lib/ludo/render";
 import { Board } from "./Board";
@@ -44,12 +44,12 @@ export function Game({ code }: { code: string }) {
     if (!state || joinedRef.current || !name) return;
     if (state.yourSeat != null) {
       joinedRef.current = true;
-      localStorage.setItem("ludo.lastRoom", code);
+      rememberRoom(code);
       return;
     }
     if (state.seats.every((s) => s.taken)) return; // full — watch instead
     joinedRef.current = true;
-    localStorage.setItem("ludo.lastRoom", code);
+    rememberRoom(code);
     void join(name);
   }, [state, name, join, code]);
 

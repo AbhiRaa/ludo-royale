@@ -16,13 +16,23 @@ export function isMuted() {
 
 export function setMuted(next: boolean) {
   muted = next;
-  if (typeof window !== "undefined") localStorage.setItem("ludo.muted", next ? "1" : "0");
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem("ludo.muted", next ? "1" : "0");
+    } catch {
+      /* storage disabled; the preference just will not persist */
+    }
+  }
   if (master && ctx) master.gain.setTargetAtTime(next ? 0 : 0.9, ctx.currentTime, 0.02);
 }
 
 export function loadMutePreference() {
   if (typeof window === "undefined") return false;
-  muted = localStorage.getItem("ludo.muted") === "1";
+  try {
+    muted = localStorage.getItem("ludo.muted") === "1";
+  } catch {
+    muted = false;
+  }
   return muted;
 }
 
