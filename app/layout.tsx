@@ -20,9 +20,25 @@ const martian = Martian_Mono({
   display: "swap",
 });
 
+const DESCRIPTION = "A hand-lacquered Ludo board for two people in two time zones. Open a table, send the code, play.";
+
 export const metadata: Metadata = {
-  title: "Ludo Royale",
-  description: "A hand-lacquered Ludo board for two people in two time zones.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ??
+      (process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : "http://localhost:3000"),
+  ),
+  title: { default: "Ludo Royale", template: "%s · Ludo Royale" },
+  description: DESCRIPTION,
+  applicationName: "Ludo Royale",
+  openGraph: {
+    title: "Ludo Royale",
+    description: DESCRIPTION,
+    type: "website",
+    siteName: "Ludo Royale",
+  },
+  twitter: { card: "summary_large_image", title: "Ludo Royale", description: DESCRIPTION },
 };
 
 export const viewport: Viewport = {
