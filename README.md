@@ -51,7 +51,9 @@ enough for local play in a single dev server. Production needs Upstash.
 
 ```bash
 npx tsx scripts/verify.ts    # board geometry, rules, 4200 simulated games, die fairness
-npx tsx scripts/e2e.mts      # the whole stack over HTTP (needs `npm run dev` running)
+npx tsx scripts/identity.mts  # player identity under working, throwing, and absent storage
+npx tsx scripts/e2e.mts       # the whole stack over HTTP (needs `npm run dev` running,
+                              # or BASE=https://your-deployment npx tsx scripts/e2e.mts)
 ```
 
 ## Deploying
