@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ConflictError, MissingRoomError } from "./store";
+import { ConflictError, MissingRoomError, StorageUnconfiguredError } from "./store";
 import { RuleError } from "./ludo/engine";
 
 export const PLAYER_HEADER = "x-ludo-player";
@@ -23,7 +23,7 @@ export function fail(err: unknown) {
   if (err instanceof RuleError) {
     return NextResponse.json({ error: err.message }, { status: err.status });
   }
-  if (err instanceof MissingRoomError || err instanceof ConflictError) {
+  if (err instanceof MissingRoomError || err instanceof ConflictError || err instanceof StorageUnconfiguredError) {
     return NextResponse.json({ error: err.message }, { status: err.status });
   }
   console.error("[ludo] unhandled", err);

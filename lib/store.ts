@@ -153,6 +153,7 @@ const backend: Backend =
 /* ------------------------------------------------------------------ */
 
 export async function readRoom(id: string): Promise<GameState | null> {
+  assertConfigured();
   return backend.read(id);
 }
 
@@ -178,8 +179,24 @@ export function seatedPlayerIds(state: GameState): string[] {
 }
 
 export async function createRoom(state: GameState): Promise<boolean> {
+  assertConfigured();
   state.version = 1;
   return backend.compareAndSet(state.id, 0, state);
+}
+
+/**
+ * The in-memory fallback is fine for `next dev`, but on Vercel each request may
+ * hit a different instance — a half-working game is worse than a clear error.
+ */
+export class StorageUnconfiguredError extends Error {
+  status = 503;
+  constructor() {
+    super("The game store is not connected yet. Add the Upstash integration and redeploy.");
+  }
+}
+
+function assertConfigured() {
+  if (storageMode === "memory" && process.env.VERCEL) throw new StorageUnconfiguredError();
 }
 
 export class ConflictError extends Error {
@@ -204,6 +221,7 @@ export async function updateRoom(
   mutate: (state: GameState) => GameState | null,
   attempts = 6,
 ): Promise<GameState> {
+  assertConfigured();
   for (let i = 0; i < attempts; i++) {
     const current = await backend.read(id);
     if (!current) throw new MissingRoomError();
