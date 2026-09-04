@@ -69,6 +69,12 @@ export type GameState = {
   turn: number;
   /** value shown on the die; null before the first roll of a game */
   dice: number | null;
+  /**
+   * Identifies *which throw* is currently on the table. Bumped only by roll().
+   * `lastEvent` cannot serve this purpose: the following move overwrites it,
+   * which used to make the client replay the throw animation.
+   */
+  diceNonce: number;
   /** true once the current player has rolled and still owes a move */
   awaitingMove: boolean;
   /** token indices the current player may legally move with `dice` */

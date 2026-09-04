@@ -43,6 +43,7 @@ export function createGame(id: string, maxPlayers: number): GameState {
     seats: colors.map<Seat>((color) => ({ color, playerId: null, name: null })),
     turn: 0,
     dice: null,
+    diceNonce: 0,
     awaitingMove: false,
     legalMoves: [],
     consecutiveSixes: 0,
@@ -136,6 +137,8 @@ export function roll(state: GameState, playerId: string): GameState {
   const color = state.seats[state.turn].color;
   const value = rollDie();
   state.dice = value;
+  // `?? 0` backfills rooms stored before this field existed.
+  state.diceNonce = (state.diceNonce ?? 0) + 1;
   state.consecutiveSixes = value === 6 ? state.consecutiveSixes + 1 : 0;
 
   if (state.consecutiveSixes >= 3) {

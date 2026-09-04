@@ -1,7 +1,7 @@
 /* Structural + behavioural checks for the Ludo core. Run: npx tsx scripts/verify.ts */
 import { COLORS, Color, GameState, HOME, LAST_RING_POS, TOKENS_PER_PLAYER, YARD } from "../lib/ludo/types";
 import { CENTER, HOME_COLUMN, RING, RING_LENGTH, SAFE_RING, START_INDEX, cellFor, pathCells, ringIndex, validateRing } from "../lib/ludo/board";
-import { createGame, hasFinished, join, legalMovesFor, move, roll, seatColorsFor } from "../lib/ludo/engine";
+import { chat, createGame, hasFinished, join, legalMovesFor, move, roll, seatColorsFor, toClientState } from "../lib/ludo/engine";
 
 let failures = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -125,6 +125,41 @@ check("three-six forfeits happen", sixStreakForfeits > 0, String(sixStreakForfei
 console.log(`  info  avg ${Math.round(totalTurns / games)} rolls/game, longest ${longest}`);
 console.log(`  info  ${captures} captures, ${sixStreakForfeits} triple-six forfeits`);
 console.log(`  info  wins by colour: ${JSON.stringify(winsByColor)}`);
+
+/* The die must only re-throw when a NEW roll happens --------------------- */
+console.log("\n[dice throw identity]");
+{
+  let s = createGame("DICE", 2);
+  seatColorsFor(2).forEach((_, i) => { s = join(s, `p${i}`, `P${i}`); });
+
+  let rolls = 0, moves = 0, wrongRollBump = 0, movesThatBumped = 0;
+  for (let step = 0; step < 6000 && s.status === "playing"; step++) {
+    const me = s.seats[s.turn].playerId!;
+    const beforeRoll = s.diceNonce;
+    s = roll(s, me);
+    rolls++;
+    if (s.diceNonce !== beforeRoll + 1) wrongRollBump++;
+    if (s.lastEvent?.type === "roll" && s.lastEvent.blocked) continue;
+
+    const beforeMove = s.diceNonce;
+    s = move(s, me, s.legalMoves[Math.floor(Math.random() * s.legalMoves.length)]);
+    moves++;
+    // Regression: a move used to overwrite lastEvent, which made the client
+    // replay the whole dice-throw animation for a die nobody had re-thrown.
+    if (s.diceNonce !== beforeMove) movesThatBumped++;
+  }
+  check("diceNonce advances exactly once per roll", wrongRollBump === 0, `${wrongRollBump}/${rolls} rolls wrong`);
+  check("moving a token never re-identifies the throw", movesThatBumped === 0, `${movesThatBumped}/${moves} moves bumped it`);
+
+  const beforeChat = s.diceNonce;
+  s = chat(s, s.seats[0].playerId!, "gg");
+  check("chatting never re-identifies the throw", s.diceNonce === beforeChat);
+  // The client is the only consumer, so it has to survive serialisation.
+  const wire = JSON.parse(JSON.stringify(toClientState(s, s.seats[0].playerId)));
+  check("diceNonce reaches the client", typeof wire.diceNonce === "number", String(wire.diceNonce));
+  check("client diceNonce matches the server", wire.diceNonce === s.diceNonce);
+  console.log(`  info  ${rolls} rolls, ${moves} moves inspected`);
+}
 
 /* Fairness of the die + first-player advantage sanity ------------------ */
 console.log("\n[fairness]");

@@ -265,7 +265,7 @@ export function Game({ code }: { code: string }) {
           <div className="panel panel-dice" style={{ padding: "18px 16px 16px" }}>
             <Dice
               value={state.dice}
-              nonce={ev?.type === "roll" ? ev.nonce : (state.dice == null ? -1 : 0)}
+              nonce={state.diceNonce ?? 0}
               shaking={pending === "roll"}
               onRoll={roll}
               canRoll={myTurn && !state.awaitingMove && pending === null && state.status === "playing"}
