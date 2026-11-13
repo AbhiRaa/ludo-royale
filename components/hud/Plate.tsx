@@ -98,7 +98,7 @@ export function Plate({
       {rank >= 0 && <span className="plate-rank">{["1st", "2nd", "3rd", "4th"][rank]}</span>}
       {onWager ? (
         <button className="plate-seal" data-set={wagerSealed} onClick={onWager} title={wagerSealed ? "Your wager is sealed — tap to change it" : "Seal a wager"}>
-          {wagerSealed ? "✉" : "+ wager"}
+          {wagerSealed ? "✉" : <>+<span className="long"> wager</span></>}
         </button>
       ) : (
         wagerSealed && <span className="plate-seal" data-set title="A wager is sealed">✉</span>

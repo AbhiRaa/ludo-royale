@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 import { Color, GameEvent, HOME, Mode, MoveKind, Snap, YARD } from "@/lib/ludo/types";
@@ -42,6 +42,8 @@ export type SceneProps = {
   winner: Color | null;
   cameraReset: number;
   lowQuality: boolean;
+  /** called once, after the first frame has actually been drawn */
+  onReady?: () => void;
 };
 
 const TONE: Record<MarkerTone, string> = {
@@ -199,6 +201,17 @@ function TurnGlow({ color }: { color: Color | null }) {
   );
 }
 
+/** Development only: hands the renderer to the console so a frame can be timed. */
+function DevProbe() {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  useEffect(() => {
+    (window as unknown as { __ludo3d?: unknown }).__ludo3d = { gl, scene, camera };
+  }, [gl, scene, camera]);
+  return null;
+}
+
 function World(props: SceneProps) {
   const { mode, players, view, cue, cinematic, seat, pickable, selected, markers } = props;
   const root = useRef<THREE.Group>(null!);
@@ -246,7 +259,13 @@ function World(props: SceneProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cue?.seq]);
 
+  const announced = useRef(false);
   useFrame(() => {
+    // by the time a frame callback runs twice, the first frame is on screen
+    if (!announced.current && root.current) {
+      announced.current = true;
+      requestAnimationFrame(() => props.onReady?.());
+    }
     const q = quake.current;
     const left = q.until - performance.now();
     if (left > 0) {
@@ -341,6 +360,7 @@ function World(props: SceneProps) {
       </group>
 
       <Director seat={seat} cue={cue} cinematic={cinematic} winner={props.winner} resetKey={props.cameraReset} />
+      {process.env.NODE_ENV !== "production" && <DevProbe />}
     </>
   );
 }

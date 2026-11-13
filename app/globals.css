@@ -284,7 +284,7 @@ h1, h2, h3, .display {
 }
 
 .toast {
-  position: absolute; left: 50%; top: 118px; transform: translateX(-50%);
+  position: absolute; left: 50%; top: 150px; transform: translateX(-50%);
   z-index: 48; padding: 9px 16px; border-radius: 999px; white-space: nowrap;
   background: rgba(24,17,13,.94); border: 1px solid rgba(201,162,39,.4);
   box-shadow: 0 16px 40px -18px rgba(0,0,0,1);
@@ -298,9 +298,21 @@ h1, h2, h3, .display {
    screen stays free for orbiting the camera.
    ========================================================================== */
 .stage { position: fixed; inset: 0; overflow: hidden; background: #06070d; }
-.stage-canvas { position: absolute; inset: 0; transition: filter .3s ease; }
+/* isolate: the veil inside must never stack above the HUD outside */
+.stage-canvas { position: absolute; inset: 0; isolation: isolate; transition: filter .3s ease; }
 .stage[data-grade="kill"] .stage-canvas { filter: saturate(.3) contrast(1.18) brightness(.9); }
 .stage[data-grade="gold"] .stage-canvas { filter: saturate(1.25) brightness(1.08); }
+.stage-veil {
+  position: absolute; inset: 0; z-index: 2; display: grid; place-content: center; justify-items: center; gap: 14px;
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(201,162,39,.16), transparent 58%),
+    linear-gradient(180deg, var(--table) 0%, var(--ink) 60%, #0b0807 100%);
+  color: var(--text-mute); font-size: 14px; transition: opacity .7s ease .1s, visibility 0s linear .8s;
+}
+.stage-veil p { margin: 0; }
+.stage-veil[data-gone="true"] { opacity: 0; visibility: hidden; pointer-events: none; }
+.stage-veil-spinner { width: 34px; height: 34px; border-radius: 9px; border: 2px solid var(--brass); border-top-color: transparent; animation: veilSpin 1.2s linear infinite; }
+@keyframes veilSpin { to { transform: rotate(360deg); } }
 .stage-flat { position: absolute; inset: 0; display: grid; place-items: center; padding: 120px 14px 190px; }
 .stage-flat > div { width: min(100%, calc(100dvh - 320px), 720px); }
 
@@ -309,7 +321,8 @@ h1, h2, h3, .display {
 
 .hud-top { position: absolute; top: 12px; left: 14px; right: 14px; display: flex; align-items: center; gap: 8px; pointer-events: none; }
 .hud-top > * { pointer-events: auto; }
-.hud-brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; text-shadow: 0 2px 14px rgba(0,0,0,.9); }
+/* a plate of its own: the sky behind it can be midnight or noon */
+.hud-brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; padding: 7px 13px; border-radius: 12px; background: rgba(18,13,10,.66); border: 1px solid rgba(201,162,39,.2); backdrop-filter: blur(8px); }
 .hud-brand h1 { font-size: 19px; letter-spacing: -.02em; }
 .hud-code { font-family: var(--font-mono); font-size: 13px; letter-spacing: .2em; color: var(--brass-hi); }
 .hud-btn {
@@ -449,14 +462,20 @@ span.plate-seal { cursor: default; }
 /* --- narrow screens: stack the HUD around a squared-up board ---------------- */
 @media (max-width: 760px) {
   .hud-top { top: 8px; left: 10px; right: 10px; gap: 6px; }
-  .hud-brand h1 { font-size: 16px; }
-  .hud-brand .eyebrow { display: none; }
+  /* no room for the wordmark beside four buttons: the room code is the title */
+  .hud-brand h1, .hud-brand .eyebrow { display: none; }
+  .hud-brand { padding: 7px 10px; border-radius: 10px; }
+  .hud-code { font-size: 14px; }
+  .toast { top: 172px; }
   .hud-btn { padding: 7px 9px; font-size: 12px; }
-  .hud-btn .long { display: none; }
+  .hud-btn .long, .hud-status .long { display: none; }
+  .hud-status { padding: 8px; }
+  .plate-seal .long { display: none; }
   .plates-far { top: 50px; left: 10px; right: 10px; transform: none; flex-direction: column; gap: 6px; }
   .plate { min-width: 0; padding: 8px 10px; gap: 9px; }
   .plate-swatch { width: 26px; height: 26px; border-radius: 8px; }
-  .plate-name-text { font-size: 14px; max-width: 110px; }
+  .plate-name-text { font-size: 14px; max-width: 150px; }
+  .plate-clock .plate-place { max-width: 80px; }
   .plate-side { flex-direction: row; align-items: center; gap: 8px; }
   .plate-pawn { width: 17px; height: 17px; border-radius: 5px; }
   .plate-near { left: 10px; right: 10px; bottom: auto; top: auto; }

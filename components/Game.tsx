@@ -94,6 +94,7 @@ export function Game({ code }: { code: string }) {
   const [grade, setGrade] = useState<"kill" | "gold" | null>(null);
   const [copied, setCopied] = useState(false);
   const [cameraReset, setCameraReset] = useState(0);
+  const [sceneReady, setSceneReady] = useState(false);
   const [showReport, setShowReport] = useState(false);
 
   const [nudge, setNudge] = useState(0);
@@ -168,6 +169,13 @@ export function Game({ code }: { code: string }) {
       if (patch.flat !== undefined) writeFlag("ludo.flat", next.flat);
       return next;
     });
+  }, []);
+
+  // The veil lifts when the scene draws its first frame. If that signal never
+  // comes, lift it anyway: an unveiled board beats a spinner that never ends.
+  useEffect(() => {
+    const t = setTimeout(() => setSceneReady(true), 9000);
+    return () => clearTimeout(t);
   }, []);
 
   /* ---- take a seat ----------------------------------------------------- */
@@ -609,6 +617,7 @@ export function Game({ code }: { code: string }) {
               winner={winner}
               cameraReset={cameraReset}
               lowQuality={narrow}
+              onReady={() => setSceneReady(true)}
             />
           </SceneBoundary>
         ) : (
@@ -616,6 +625,12 @@ export function Game({ code }: { code: string }) {
             <div><FlatBoard {...board} /></div>
           </div>
         )}
+        {/* the 3D scene is a separate download and needs a moment to compile its
+            shaders; never show an empty black canvas while it does */}
+        <div className="stage-veil" data-gone={!use3d || sceneReady} aria-hidden={!use3d || sceneReady}>
+          <div className="stage-veil-spinner" />
+          <p>Setting the table…</p>
+        </div>
       </div>
 
       <div className="hud">
@@ -643,9 +658,9 @@ export function Game({ code }: { code: string }) {
           <button className="hud-btn" data-on={panel === "settings"} onClick={() => setPanel(panel === "settings" ? null : "settings")} aria-label="Settings">
             ⚙
           </button>
-          <span className="chip" title={status} style={{ borderColor: status === "live" ? "rgba(46,158,123,.5)" : "rgba(201,162,39,.28)", background: "rgba(10,8,6,.7)" }}>
+          <span className="chip hud-status" title={status} style={{ borderColor: status === "live" ? "rgba(46,158,123,.5)" : "rgba(201,162,39,.28)", background: "rgba(10,8,6,.7)" }}>
             <span className="presence" data-on={status === "live"} />
-            {status === "live" ? "live" : status === "hidden" ? "paused" : "…"}
+            <span className="long">{status === "live" ? "live" : status === "hidden" ? "paused" : "…"}</span>
           </span>
         </header>
 

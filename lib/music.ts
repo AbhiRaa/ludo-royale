@@ -178,7 +178,7 @@ export function startMusic() {
 
   bus = ctx.createGain();
   bus.gain.setValueAtTime(0.0001, ctx.currentTime);
-  bus.gain.exponentialRampToValueAtTime(0.5, ctx.currentTime + 2.5);
+  bus.gain.exponentialRampToValueAtTime(0.8, ctx.currentTime + 2.5);
   const limiter = ctx.createDynamicsCompressor();
   limiter.threshold.value = -16;
   limiter.ratio.value = 6;
