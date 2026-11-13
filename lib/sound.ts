@@ -7,8 +7,23 @@
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
+let reverb: ConvolverNode | null = null;
 let muted = false;
 let noiseBuffer: AudioBuffer | null = null;
+
+/** The shared graph, for the score. Null until the first user gesture. */
+export function audioGraph(): { ctx: AudioContext; out: AudioNode; reverb: AudioNode; noise: AudioBuffer } | null {
+  return ctx && reverb && noiseBuffer ? { ctx, out: ctx.destination, reverb, noise: noiseBuffer } : null;
+}
+
+/** Phones only, and only where the platform allows it. Never throws. */
+export function buzz(pattern: number | number[]) {
+  try {
+    if (!muted) navigator.vibrate?.(pattern);
+  } catch {
+    /* unsupported */
+  }
+}
 
 export function isMuted() {
   return muted;
@@ -57,6 +72,7 @@ export function unlockAudio() {
     for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2);
   }
   conv.buffer = imp;
+  reverb = conv;
   const wet = ctx.createGain();
   wet.gain.value = 0.16;
   master.connect(ctx.destination);
@@ -122,7 +138,8 @@ function noise(at: number, dur: number, freq: number, q: number, gain: number, t
 
 export type Sfx =
   | "rattle" | "land" | "hop" | "capture" | "home"
-  | "six" | "turn" | "win" | "lose" | "msg" | "join" | "blocked";
+  | "six" | "turn" | "win" | "lose" | "msg" | "join" | "blocked"
+  | "shield" | "fate" | "nudge" | "whoosh" | "boom" | "pass" | "start" | "react" | "tick";
 
 export function sfx(name: Sfx, variant = 0) {
   if (!ctx || muted) return;
@@ -174,6 +191,56 @@ export function sfx(name: Sfx, variant = 0) {
     case "join":
       tone({ freq: 587.33, dur: 0.16, type: "triangle", gain: 0.19 });
       tone({ freq: 880, at: 0.11, dur: 0.26, type: "triangle", gain: 0.19 });
+      break;
+    case "shield":
+      // struck metal: partials that are deliberately not harmonics of each other
+      [523, 811, 1193, 1637, 2210, 2891].forEach((f, i) =>
+        tone({ freq: f, dur: 0.55 - i * 0.05, type: "sine", gain: 0.13 - i * 0.015, attack: 0.002 }),
+      );
+      noise(0, 0.05, 3200, 1.2, 0.3);
+      break;
+    case "fate":
+      [1318.5, 1760, 2637].forEach((f, i) => tone({ freq: f, at: i * 0.06, dur: 0.32, type: "sine", gain: 0.11 }));
+      break;
+    case "nudge":
+      tone({ freq: variant >= 0 ? 740 : 554, to: variant >= 0 ? 988 : 415, dur: 0.11, type: "triangle", gain: 0.16 });
+      break;
+    case "whoosh":
+      if (ctx && master && noiseBuffer) {
+        const t = now();
+        const src = ctx.createBufferSource();
+        src.buffer = noiseBuffer;
+        const filt = ctx.createBiquadFilter();
+        filt.type = "bandpass";
+        filt.Q.value = 1.6;
+        filt.frequency.setValueAtTime(260, t);
+        filt.frequency.exponentialRampToValueAtTime(2600, t + 0.42);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.26, t + 0.22);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+        src.connect(filt);
+        filt.connect(g);
+        g.connect(master);
+        src.start(t, 0, 0.6);
+      }
+      break;
+    case "boom":
+      tone({ freq: 92, to: 36, dur: 0.75, type: "sine", gain: 0.5, attack: 0.004 });
+      noise(0, 0.4, 180, 0.7, 0.3, "lowpass");
+      break;
+    case "pass":
+      tone({ freq: 494, dur: 0.14, type: "triangle", gain: 0.12 });
+      tone({ freq: 370, at: 0.1, dur: 0.22, type: "triangle", gain: 0.12 });
+      break;
+    case "start":
+      [293.66, 440, 587.33, 880].forEach((f, i) => tone({ freq: f, at: i * 0.09, dur: 0.7, type: "triangle", gain: 0.16 }));
+      break;
+    case "react":
+      tone({ freq: 660, to: 990, dur: 0.12, type: "sine", gain: 0.15 });
+      break;
+    case "tick":
+      tone({ freq: 1200, dur: 0.03, type: "square", gain: 0.05 });
       break;
   }
 }

@@ -10,9 +10,11 @@ const QUICK = ["Good luck ❤️", "Nooo 😭", "Your turn!", "That was rude �
 export function Chat({
   state,
   onSend,
+  onClose,
 }: {
   state: ClientState;
   onSend: (text: string) => void;
+  onClose?: () => void;
 }) {
   const [text, setText] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
@@ -31,8 +33,9 @@ export function Chat({
 
   return (
     <div className="panel" style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
-      <div style={{ padding: "12px 14px 8px" }}>
+      <div style={{ padding: "12px 14px 8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span className="eyebrow">Table talk</span>
+        {onClose && <button className="sheet-x" onClick={onClose} aria-label="Close chat">×</button>}
       </div>
 
       <div

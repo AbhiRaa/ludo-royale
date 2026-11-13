@@ -1,6 +1,8 @@
 import { Redis } from "@upstash/redis";
 import type { GameState } from "./ludo/types";
 import { PRESENCE_TTL_SECONDS } from "./ludo/types";
+import { migrate } from "./ludo/engine";
+import { isBot } from "./ludo/bot";
 
 const TTL_SECONDS = 60 * 60 * 36; // rooms evaporate a day and a half after last write
 const key = (id: string) => `ludo:room:${id}`;
@@ -51,7 +53,7 @@ class RedisBackend implements Backend {
     const raw = await this.redis.get(key(id));
     if (raw == null) return null;
     // Upstash parses JSON payloads for us, but tolerate a plain string too.
-    return typeof raw === "string" ? (JSON.parse(raw) as GameState) : (raw as GameState);
+    return migrate(typeof raw === "string" ? JSON.parse(raw) : raw);
   }
   async readVersion(id: string): Promise<number | null> {
     const raw = await this.redis.get(versionKey(id));
@@ -113,7 +115,7 @@ class MemoryBackend implements Backend {
   }
   async read(id: string): Promise<GameState | null> {
     const row = this.live(id);
-    return row ? (JSON.parse(row.state) as GameState) : null;
+    return row ? migrate(JSON.parse(row.state)) : null;
   }
   async readVersion(id: string): Promise<number | null> {
     const row = this.live(id);
@@ -175,7 +177,7 @@ export async function pollRoom(id: string, players: string[]) {
 
 /** Player ids currently seated, for presence lookups. */
 export function seatedPlayerIds(state: GameState): string[] {
-  return state.seats.map((s) => s.playerId).filter((p): p is string => Boolean(p));
+  return state.seats.map((s) => s.playerId).filter((p): p is string => Boolean(p) && !isBot(p));
 }
 
 export async function createRoom(state: GameState): Promise<boolean> {

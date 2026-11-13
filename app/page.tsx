@@ -7,6 +7,7 @@ import { getPlayerId, getPlayerName, lastRoom as readLastRoom, setPlayerName } f
 import { normaliseCode } from "@/lib/id";
 import { COLORS } from "@/lib/ludo/types";
 import { PALETTE } from "@/lib/ludo/render";
+import { localZone } from "@/lib/zone";
 import { TokenPiece } from "@/components/TokenPiece";
 
 export default function Lobby() {
@@ -14,7 +15,8 @@ export default function Lobby() {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [seats, setSeats] = useState(2);
-  const [busy, setBusy] = useState<"create" | "join" | null>(null);
+  const [mode, setMode] = useState<"royale" | "classic">("royale");
+  const [busy, setBusy] = useState<"create" | "solo" | "join" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastRoom, setLastRoom] = useState<string | null>(null);
 
@@ -29,14 +31,14 @@ export default function Lobby() {
     return n;
   };
 
-  const create = async () => {
-    setBusy("create");
+  const create = async (solo = false) => {
+    setBusy(solo ? "solo" : "create");
     setError(null);
     try {
       const res = await fetch("/api/room", {
         method: "POST",
         headers: { "content-type": "application/json", "x-ludo-player": getPlayerId() },
-        body: JSON.stringify({ name: remember(), maxPlayers: seats }),
+        body: JSON.stringify({ name: remember(), maxPlayers: seats, mode, solo, zone: localZone() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not open a table.");
@@ -100,8 +102,8 @@ export default function Lobby() {
           >
             Ludo Royale
           </h1>
-          <p style={{ color: "var(--text-mute)", fontSize: 15, marginTop: 12, maxWidth: 380, marginInline: "auto" }}>
-            One lacquered board, two people, however many miles. Open a table and send the code.
+          <p style={{ color: "var(--text-mute)", fontSize: 15, marginTop: 12, maxWidth: 400, marginInline: "auto" }}>
+            One table, floating between two skies — yours and theirs, each at its own hour. Open a table and send the code.
           </p>
         </div>
 
@@ -116,6 +118,32 @@ export default function Lobby() {
               onChange={(e) => setName(e.target.value)}
             />
           </label>
+
+          <div>
+            <span className="eyebrow" style={{ display: "block", marginBottom: 7 }}>The game</span>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {([
+                ["royale", "The Court", "Four characters. Fate. A sharper game."],
+                ["classic", "Classic", "The rules you grew up with."],
+              ] as const).map(([id, title, note]) => (
+                <button
+                  key={id}
+                  className="btn"
+                  onClick={() => setMode(id)}
+                  aria-pressed={mode === id}
+                  style={{
+                    textAlign: "left",
+                    padding: "11px 13px",
+                    borderColor: mode === id ? "rgba(201,162,39,.85)" : undefined,
+                    background: mode === id ? "linear-gradient(180deg, rgba(201,162,39,.34), rgba(201,162,39,.12))" : undefined,
+                  }}
+                >
+                  <span style={{ display: "block", fontFamily: "var(--font-display)", fontSize: 17, color: mode === id ? "var(--bone)" : "var(--text-mute)" }}>{title}</span>
+                  <span style={{ display: "block", fontSize: 11.5, fontWeight: 400, color: "var(--text-faint)", marginTop: 3, lineHeight: 1.35 }}>{note}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div>
             <span className="eyebrow" style={{ display: "block", marginBottom: 7 }}>Players</span>
@@ -138,8 +166,11 @@ export default function Lobby() {
             </div>
           </div>
 
-          <button className="btn btn-primary" onClick={create} disabled={busy !== null} style={{ padding: "14px 20px", fontSize: 15 }}>
+          <button className="btn btn-primary" onClick={() => create(false)} disabled={busy !== null} style={{ padding: "14px 20px", fontSize: 15 }}>
             {busy === "create" ? "Laying out the board…" : "Open a new table"}
+          </button>
+          <button className="btn btn-ghost" onClick={() => create(true)} disabled={busy !== null} style={{ marginTop: -8, fontSize: 13 }}>
+            {busy === "solo" ? "The House is sitting down…" : "Nobody around? Play the House"}
           </button>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

@@ -3,13 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ClientState } from "./ludo/types";
 import { getPlayerId } from "./player";
+import { localZone } from "./zone";
 
 export type ConnectionStatus = "connecting" | "live" | "reconnecting" | "hidden" | "gone";
-type ActionPayload =
+export type ActionPayload =
   | { type: "roll" }
-  | { type: "move"; token: number }
+  | { type: "move"; token: number; to?: number; nudge?: number }
+  | { type: "pass" }
   | { type: "rematch" }
-  | { type: "chat"; text: string };
+  | { type: "chat"; text: string }
+  | { type: "wager"; text: string }
+  | { type: "react"; emoji: string };
 
 export function useRoom(code: string) {
   const [state, setState] = useState<ClientState | null>(null);
@@ -135,7 +139,7 @@ export function useRoom(code: string) {
         const res = await fetch(`/api/room/${code}/join`, {
           method: "POST",
           headers: { "content-type": "application/json", "x-ludo-player": getPlayerId() },
-          body: JSON.stringify({ name }),
+          body: JSON.stringify({ name, zone: localZone() }),
         });
         const data = await res.json();
         if (!res.ok) {
